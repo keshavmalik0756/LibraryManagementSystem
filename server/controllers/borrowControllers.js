@@ -171,9 +171,19 @@ export const borrowedBooks = catchAsyncErrors(async (req, res, next) => {
     .populate("book")
     .sort({ borrowDate: -1 });
 
+  // Calculate dynamic fine for unreturned books
+  const updatedBorrows = borrows.map(borrow => {
+    const borrowObj = borrow.toObject();
+    if (!borrowObj.returnDate) {
+      const { fine } = fineCalculator(borrowObj.dueDate, new Date());
+      borrowObj.fine = fine;
+    }
+    return borrowObj;
+  });
+
   res.status(200).json({
     success: true,
-    borrowedBooks: borrows,
+    borrowedBooks: updatedBorrows,
   });
 });
 
@@ -187,9 +197,19 @@ export const getBorrowedBooksForAdmin = catchAsyncErrors(
       .populate("book user") // Full details for admin
       .sort({ borrowDate: -1 });
 
+    // Calculate dynamic fine for unreturned books
+    const updatedBorrowedBooks = borrowedBooks.map(borrow => {
+      const borrowObj = borrow.toObject();
+      if (!borrowObj.returnDate) {
+        const { fine } = fineCalculator(borrowObj.dueDate, new Date());
+        borrowObj.fine = fine;
+      }
+      return borrowObj;
+    });
+
     res.status(200).json({
       success: true,
-      borrowedBooks,
+      borrowedBooks: updatedBorrowedBooks,
     });
   }
 );

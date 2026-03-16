@@ -105,10 +105,7 @@ const MyBorrowedBooks = () => {
     const now = new Date();
     const overdue = userBorrowedBooks?.filter((book) => {
       if (book.returnDate) return false;
-      const dueDate = new Date(book.dueDate || book.borrowDate);
-      if (book.dueDate) {
-        dueDate.setDate(dueDate.getDate() + 60); // Assuming 60-day borrowing period
-      }
+      const dueDate = new Date(book.dueDate);
       return dueDate < now;
     }).length || 0;
     
@@ -170,10 +167,7 @@ const MyBorrowedBooks = () => {
       const now = new Date();
       result = result.filter((book) => {
         if (book.returnDate) return false;
-        const dueDate = new Date(book.dueDate || book.borrowDate);
-        if (book.dueDate) {
-          dueDate.setDate(dueDate.getDate() + 60);
-        }
+        const dueDate = new Date(book.dueDate);
         return dueDate < now;
       });
     }
@@ -185,10 +179,7 @@ const MyBorrowedBooks = () => {
       
       result = result.filter((book) => {
         if (book.returnDate) return false;
-        const dueDate = new Date(book.dueDate || book.borrowDate);
-        if (book.dueDate) {
-          dueDate.setDate(dueDate.getDate() + 60);
-        }
+        const dueDate = new Date(book.dueDate);
         return dueDate >= now && dueDate <= threeDaysFromNow;
       });
     }
@@ -217,10 +208,7 @@ const MyBorrowedBooks = () => {
     if (book.returnDate) return "returned";
     
     const now = new Date();
-    const dueDate = new Date(book.dueDate || book.borrowDate);
-    if (book.dueDate) {
-      dueDate.setDate(dueDate.getDate() + 60);
-    }
+    const dueDate = new Date(book.dueDate);
     
     if (dueDate < now) return "overdue";
     

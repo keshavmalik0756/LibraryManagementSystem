@@ -17,55 +17,37 @@ import { notifyUsers } from "./services/notifyUsers.js";
 import { removeUnverifiedAccounts } from "./services/removeUnverifiedAccounts.js";
 
 // Load environment variables
-config({ path: "./config/config.env" });
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+config({ path: path.join(__dirname, "config", "config.env") });
 
 // Initialize Express
 export const app = express();
 
-// ===== CREDENTIALS-COMPATIBLE CORS FIX =====
-console.log("🌐 Setting up CORS...");
-console.log("🔗 Frontend URL from env:", process.env.FRONTEND_URL);
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : [process.env.FRONTEND_URL || "http://localhost:5173"];
 
-// CORS configuration that supports credentials
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-
-    // Allow all origins for now (can be restricted later)
-    callback(null, true);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-  credentials: true, // Enable credentials support
+  credentials: true,
   optionsSuccessStatus: 200
 }));
 
-// ===== CREDENTIALS-COMPATIBLE CORS HEADERS =====
+// Logger middleware
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
-  // Set specific origin instead of wildcard when credentials are involved
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', 'https://libraflow-library.netlify.app');
-  }
-
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-
-  // Log CORS requests for debugging
-  console.log(`🔄 CORS: ${req.method} ${req.path} from ${origin || 'no-origin'}`);
-
-  // Handle preflight OPTIONS requests immediately
-  if (req.method === 'OPTIONS') {
-    console.log(`✅ CORS: Preflight handled for ${req.path}`);
-    return res.status(200).json({ message: 'CORS OK' });
-  }
-
+  console.log(`🔄 Request: ${req.method} ${req.path} from ${req.headers.origin || 'no-origin'}`);
   next();
 });
 
@@ -111,7 +93,7 @@ app.get("/cors-test", (req, res) => {
   if (origin) {
     res.header('Access-Control-Allow-Origin', origin);
   } else {
-    res.header('Access-Control-Allow-Origin', 'https://libraflow-library.netlify.app');
+    res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://library-management-system-kappa-fawn.vercel.app');
   }
   res.header('Access-Control-Allow-Credentials', 'true');
 
@@ -131,7 +113,7 @@ app.use((req, res) => {
   if (origin) {
     res.header('Access-Control-Allow-Origin', origin);
   } else {
-    res.header('Access-Control-Allow-Origin', 'https://libraflow-library.netlify.app');
+    res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://library-management-system-kappa-fawn.vercel.app');
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');

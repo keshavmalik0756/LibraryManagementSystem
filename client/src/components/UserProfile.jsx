@@ -264,9 +264,9 @@ const UserProfile = () => {
     })?.length || 0;
 
     const totalFines = borrowedBooks?.reduce((sum, book) => sum + (book.fine || 0), 0) || 0;
-    const unpaidFines = borrowedBooks?.filter(b => b.fine > 0 && !b.finePaid && !b.returnDate)?.length || 0;
+    const unpaidFines = borrowedBooks?.filter(b => b.fine > 0 && b.paymentStatus !== "completed" && !b.returnDate)?.length || 0;
     const unpaidFineAmount = borrowedBooks?.reduce((sum, book) => {
-        if (book.fine > 0 && !book.finePaid && !b.returnDate) {
+        if (book.fine > 0 && book.paymentStatus !== "completed" && !book.returnDate) {
             return sum + book.fine;
         }
         return sum;
@@ -770,12 +770,12 @@ const UserProfile = () => {
                                                                             Overdue
                                                                         </span>
                                                                     )}
-                                                                    {borrow.fine > 0 && !borrow.finePaid && (
+                                                                    {borrow.fine > 0 && borrow.paymentStatus !== "completed" && (
                                                                         <span className="text-[8px] bg-red-100 text-red-800 px-1.5 py-0.5 rounded">
                                                                             Fine: ₹{borrow.fine.toFixed(2)}
                                                                         </span>
                                                                     )}
-                                                                    {borrow.fine > 0 && borrow.finePaid && (
+                                                                    {borrow.fine > 0 && borrow.paymentStatus === "completed" && (
                                                                         <span className="text-[8px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
                                                                             Fine Paid
                                                                         </span>
@@ -783,7 +783,7 @@ const UserProfile = () => {
                                                                 </div>
 
                                                                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                                                                    {borrow.fine > 0 && !borrow.finePaid && !borrow.returnDate && (
+                                                                    {borrow.fine > 0 && borrow.paymentStatus !== "completed" && !borrow.returnDate && (
                                                                         <button className="text-[10px] bg-black text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors flex items-center">
                                                                             <CreditCard className="w-2.5 h-2.5 mr-1" />
                                                                             Pay Fine
@@ -871,12 +871,12 @@ const UserProfile = () => {
                                                                             Overdue
                                                                         </span>
                                                                     )}
-                                                                    {borrow.fine > 0 && !borrow.finePaid && (
+                                                                    {borrow.fine > 0 && borrow.paymentStatus !== "completed" && (
                                                                         <span className="text-[8px] bg-red-100 text-red-800 px-1.5 py-0.5 rounded">
                                                                             Fine: ₹{borrow.fine.toFixed(2)}
                                                                         </span>
                                                                     )}
-                                                                    {borrow.fine > 0 && borrow.finePaid && (
+                                                                    {borrow.fine > 0 && borrow.paymentStatus === "completed" && (
                                                                         <span className="text-[8px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
                                                                             Fine Paid
                                                                         </span>
@@ -884,7 +884,7 @@ const UserProfile = () => {
                                                                 </div>
 
                                                                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                                                                    {borrow.fine > 0 && !borrow.finePaid && !borrow.returnDate && (
+                                                                    {borrow.fine > 0 && borrow.paymentStatus !== "completed" && !borrow.returnDate && (
                                                                         <button className="text-[10px] bg-black text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors flex items-center">
                                                                             <CreditCard className="w-2.5 h-2.5 mr-1" />
                                                                             Pay Fine

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserPayments } from "../store/slices/fineSlice";
-import { CreditCard, Book, IndianRupee, Calendar } from "lucide-react";
+import { CreditCard, Book, IndianRupee, Calendar, Clock } from "lucide-react";
 
 const UserPayments = () => {
   const dispatch = useDispatch();
@@ -93,13 +93,19 @@ const UserPayments = () => {
                   <div className="ml-4">
                     <div className="flex items-center">
                       <h4 className="text-sm font-medium text-gray-900">{payment.book?.title || 'Unknown Book'}</h4>
-                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Paid
+                      <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        payment.paymentStatus === "completed" 
+                          ? "bg-green-100 text-green-800" 
+                          : payment.paymentStatus === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}>
+                        {payment.paymentStatus === "completed" ? "Paid" : payment.paymentStatus || "Unpaid"}
                       </span>
                     </div>
                     <div className="flex items-center mt-1 text-sm text-gray-500">
-                      <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                      <span>{formatDate(payment.createdAt)}</span>
+                      <Clock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                      <span>{payment.paymentStatus === "completed" ? "Paid on" : "Logged on"} {formatDate(payment.createdAt)}</span>
                     </div>
                   </div>
                 </div>

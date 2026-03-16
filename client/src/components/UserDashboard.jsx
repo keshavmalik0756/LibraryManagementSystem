@@ -239,20 +239,10 @@ const UserDashboard = () => {
 
     // Improved overdue calculation using dueDate if available, otherwise fallback to 60 days from borrowDate
     const overdue = userBorrowedBooks.filter((b) => {
-      if (b.returnDate) return false; // Not overdue if already returned
-
-      // If dueDate is available, use it for comparison
+      if (b.returnDate) return false;
       if (b.dueDate) {
-        const dueDate = new Date(b.dueDate);
-        const today = new Date();
-        return dueDate < today; // Overdue if due date has passed
+        return new Date(b.dueDate) < new Date();
       }
-
-      // Fallback to 60 days from borrowDate (since books can be borrowed for 60 days)
-      if (b.borrowDate) {
-        return daysBetween(b.borrowDate) > 60;
-      }
-
       return false;
     }).length;
 
@@ -267,14 +257,14 @@ const UserDashboard = () => {
     // Calculate fine statistics
     const totalFines = userBorrowedBooks.reduce((sum, book) => sum + (book.fine || 0), 0);
     const paidFines = userBorrowedBooks
-      .filter(book => book.finePaid)
+      .filter(book => book.paymentStatus === "completed")
       .reduce((sum, book) => sum + (book.fine || 0), 0);
     const pendingFines = totalFines - paidFines;
 
     // Calculate payment statistics
     const totalPayments = userPayments.length;
-    const totalPaymentAmount = userPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    const successfulPayments = userPayments.filter(payment => payment.status === 'completed').length;
+    const totalPaymentAmount = userPayments.reduce((sum, payment) => sum + (payment.fine || 0), 0);
+    const successfulPayments = userPayments.filter(payment => payment.paymentStatus === 'completed').length;
 
     const totalInteractions = userBorrowedBooks.length;
 
@@ -543,20 +533,10 @@ const UserDashboard = () => {
     // Apply overdue filter - FIXED: Use 60 days instead of 14 days
     if (onlyOverdue) {
       arr = arr.filter((r) => {
-        if (r.returnDate) return false; // Not overdue if already returned
-        
-        // If dueDate is available, use it for comparison
+        if (r.returnDate) return false;
         if (r.dueDate) {
-          const dueDate = new Date(r.dueDate);
-          const today = new Date();
-          return dueDate < today; // Overdue if due date has passed
+          return new Date(r.dueDate) < new Date();
         }
-        
-        // Fallback to 60 days from borrowDate
-        if (r.borrowDate) {
-          return daysBetween(r.borrowDate) > 60;
-        }
-        
         return false;
       });
     }
@@ -638,7 +618,7 @@ const UserDashboard = () => {
       status: r.returnDate ? "Returned" : "Borrowed",
       price: r.price ?? 0,
       fine: r.fine ?? 0,
-      finePaid: r.finePaid ? "Yes" : "No",
+      paymentStatus: r.paymentStatus || "unpaid",
       daysBorrowed: r.returnDate
         ? daysBetween(r.borrowDate, new Date(r.returnDate))
         : daysBetween(r.borrowDate),
@@ -711,12 +691,8 @@ const UserDashboard = () => {
     const activeLoans = userBorrowedBooks.filter(b => !b.returnDate).length;
     const overdueBooks = userBorrowedBooks.filter(b => {
       if (b.returnDate) return false;
-      // Use dueDate if available, otherwise calculate based on 60 days from borrowDate
       if (b.dueDate) {
         return new Date(b.dueDate) < new Date();
-      }
-      if (b.borrowDate) {
-        return daysBetween(b.borrowDate) > 60;
       }
       return false;
     }).length;
@@ -1438,7 +1414,7 @@ const UserDashboard = () => {
                           )}
 
                           {/* Add payment button for unpaid fines */}
-                          {rec.fine > 0 && !rec.finePaid && (
+                          {rec.fine > 0 && rec.paymentStatus !== "completed" && (
                             <button
                               onClick={() => setSelectedBorrowRecord(rec)}
                               className="px-2 py-1 text-xs bg-black text-white rounded-md hover:bg-gray-800 transition flex items-center"
@@ -1448,7 +1424,7 @@ const UserDashboard = () => {
                             </button>
                           )}
 
-                          {rec.fine > 0 && rec.finePaid && (
+                          {rec.fine > 0 && rec.paymentStatus === "completed" && (
                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-md">
                               Fine Paid
                             </span>
@@ -1597,7 +1573,7 @@ const UserDashboard = () => {
 
                           <div className="flex items-center gap-2">
                             {rec.fine > 0 && (
-                              <span className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 ${rec.finePaid
+                              <span className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 ${rec.paymentStatus === "completed"
                                   ? "bg-green-100 text-green-800"
                                   : "bg-red-100 text-red-800"
                                 }`}>
@@ -1650,7 +1626,7 @@ const UserDashboard = () => {
                           {rec.fine > 0 && (
                             <div className="flex items-center text-xs text-gray-500 gap-1">
                               <CreditCard className="w-3 h-3" />
-                              <span>{rec.finePaid ? "Paid" : "Unpaid"}</span>
+                              <span>{rec.paymentStatus === "completed" ? "Paid" : "Unpaid"}</span>
                             </div>
                           )}
                         </div>
@@ -1803,6 +1779,16 @@ const UserDashboard = () => {
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                             {selectedBook.book?.genre || "Other"}
                           </span>
+                          {selectedBook.fine > 0 && selectedBook.paymentStatus !== "completed" && (
+                            <span className="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
+                              ₹{selectedBook.fine.toFixed(2)} (Unpaid)
+                            </span>
+                          )}
+                          {selectedBook.fine > 0 && selectedBook.paymentStatus === "completed" && (
+                            <span className="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                              ₹{selectedBook.fine.toFixed(2)} (Paid)
+                            </span>
+                          )}
                           <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
                             ISBN: {selectedBook.book?.ISBN || selectedBook.book?.isbn || "N/A"}
                           </span>
@@ -1874,9 +1860,9 @@ const UserDashboard = () => {
                     </h5>
                     {selectedBook.fine > 0 && (
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        selectedBook.finePaid ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        selectedBook.paymentStatus === "completed" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                       }`}>
-                        {selectedBook.finePaid ? "Paid" : "Unpaid"}
+                        {selectedBook.paymentStatus === "completed" ? "Paid" : "Unpaid"}
                       </span>
                     )}
                   </div>
@@ -1902,7 +1888,7 @@ const UserDashboard = () => {
                     </div>
                   </div>
                   
-                  {selectedBook.fine > 0 && !selectedBook.finePaid && (
+                  {selectedBook.fine > 0 && selectedBook.paymentStatus !== "completed" && (
                     <button
                       onClick={() => setSelectedBorrowRecord(selectedBook)}
                       className="w-full py-2 sm:py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2 text-sm sm:text-base"

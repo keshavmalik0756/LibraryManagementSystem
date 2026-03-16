@@ -63,7 +63,8 @@ const Users = () => {
   // Function to get overdue books for a user
   const getOverdueBooks = (user) => {
     const borrowedBooks = getBorrowedBooksForUser(user);
-    return borrowedBooks.filter(book => book.fine > 0).length;
+    const now = new Date();
+    return borrowedBooks.filter(book => !book.returnDate && book.dueDate && new Date(book.dueDate) < now).length;
   };
 
   // Function to get total borrowed books for a user
@@ -81,7 +82,7 @@ const Users = () => {
   // Function to get unpaid fines for a user
   const getUnpaidFines = (user) => {
     const borrowedBooks = getBorrowedBooksForUser(user);
-    return borrowedBooks.filter(book => book.fine > 0 && !book.finePaid).length;
+    return borrowedBooks.filter(book => book.fine > 0 && book.paymentStatus !== "completed").length;
   };
 
   // Filter users by role and search term
@@ -155,11 +156,11 @@ const Users = () => {
   // Calculate statistics
   const totalUsers = users?.filter(u => u.role === "User").length || 0;
   const activeBorrowers = users?.filter(u => u.role === "User" && u.BorrowBooks?.length > 0).length || 0;
-  const overdueBooks = users?.reduce((count, user) => 
-    count + (user.BorrowBooks?.filter(b => b.fine > 0).length || 0), 0) || 0;
+  const overdueBooksCount = users?.reduce((count, user) => 
+    count + (getBorrowedBooksForUser(user).filter(b => !b.returnDate && b.dueDate && new Date(b.dueDate) < new Date()).length || 0), 0) || 0;
   const verifiedUsers = users?.filter(u => u.role === "User" && u.accountVerified).length || 0;
   const totalFines = users?.reduce((sum, user) => 
-    sum + (user.BorrowBooks?.reduce((bookSum, book) => bookSum + (book.fine || 0), 0) || 0), 0) || 0;
+    sum + (getBorrowedBooksForUser(user).reduce((bookSum, book) => bookSum + (book.fine || 0), 0) || 0), 0) || 0;
 
   // Stats card data
   const statsData = [
@@ -186,7 +187,7 @@ const Users = () => {
     { 
       id: 3, 
       title: "Overdue Books", 
-      value: overdueBooks, 
+      value: overdueBooksCount, 
       icon: Calendar, 
       color: "orange", 
       borderClass: "border-orange-500",

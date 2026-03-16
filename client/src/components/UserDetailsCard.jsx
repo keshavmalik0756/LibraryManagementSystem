@@ -111,10 +111,10 @@ const UserDetailsCard = ({ user, onClose }) => {
     }).length;
     
     // Calculate unpaid fines (only for books that haven't been returned)
-    const unpaidFines = borrowedBooks.filter(b => b.fine > 0 && !b.finePaid && !b.returnDate).length;
+    const unpaidFines = borrowedBooks.filter(b => b.fine > 0 && b.paymentStatus !== "completed" && !b.returnDate).length;
     const totalFineAmount = borrowedBooks.reduce((sum, book) => sum + (book.fine || 0), 0);
     const unpaidFineAmount = borrowedBooks.reduce((sum, book) => {
-        if (book.fine > 0 && !book.finePaid && !book.returnDate) {
+        if (book.fine > 0 && book.paymentStatus !== "completed" && !book.returnDate) {
             return sum + book.fine;
         }
         return sum;
@@ -208,7 +208,7 @@ const UserDetailsCard = ({ user, onClose }) => {
         setLocalBorrowedBooks(prev => 
             prev.map(book => 
                 book._id === payment.borrowRecord._id 
-                    ? { ...book, finePaid: true } 
+                    ? { ...book, paymentStatus: "completed" } 
                     : book
             )
         );
@@ -219,7 +219,7 @@ const UserDetailsCard = ({ user, onClose }) => {
 
     // Handle "Pay All Fines" feature
     const handlePayAllFines = () => {
-        const unpaidFines = borrowedBooks.filter(book => book.fine > 0 && !book.finePaid && !book.returnDate);
+        const unpaidFines = borrowedBooks.filter(book => book.fine > 0 && book.paymentStatus !== "completed" && !book.returnDate);
         if (unpaidFines.length === 0) {
             toast.info("No unpaid fines found for this user.");
             return;
@@ -751,12 +751,12 @@ const UserDetailsCard = ({ user, onClose }) => {
                                                                                     Overdue
                                                                                 </span>
                                                                             )}
-                                                                            {borrow.fine > 0 && !borrow.finePaid && (
+                                                                            {borrow.fine > 0 && borrow.paymentStatus !== "completed" && (
                                                                                 <span className="text-[8px] sm:text-[10px] bg-red-100 text-red-800 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded">
                                                                                     Fine: ₹{borrow.fine.toFixed(2)}
                                                                                 </span>
                                                                             )}
-                                                                            {borrow.fine > 0 && borrow.finePaid && (
+                                                                            {borrow.fine > 0 && borrow.paymentStatus === "completed" && (
                                                                                 <span className="text-[8px] sm:text-[10px] bg-green-100 text-green-800 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded">
                                                                                     Fine Paid
                                                                                 </span>
@@ -765,7 +765,7 @@ const UserDetailsCard = ({ user, onClose }) => {
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex flex-col sm:flex-row items-center gap-2">
-                                                                    {borrow.fine > 0 && !borrow.finePaid && !borrow.returnDate && (
+                                                                    {borrow.fine > 0 && borrow.paymentStatus !== "completed" && !borrow.returnDate && (
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();

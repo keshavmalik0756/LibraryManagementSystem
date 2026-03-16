@@ -106,7 +106,9 @@ const Payments = () => {
   // Calculate statistics
   const stats = useMemo(() => {
     const totalPayments = allPayments.length;
-    const totalAmount = allPayments.reduce((sum, payment) => sum + (payment.fine || 0), 0);
+    const totalAmount = allPayments
+      .filter(p => p.paymentStatus === "completed")
+      .reduce((sum, payment) => sum + (payment.fine || 0), 0);
     const completedPayments = allPayments.filter(p => p.paymentStatus === "completed").length;
     const pendingPayments = allPayments.filter(p => p.paymentStatus === "pending").length;
     const failedPayments = allPayments.filter(p => p.paymentStatus === "failed").length;

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "cd server && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "build": "cd client && npm run build",
     "client": "cd client && npm start",
     "server": "cd server && npm start",
@@ -21,17 +21,9 @@
   "author": "Keshav Malik",
   "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cloudinary": "^2.6.0",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^5.1.0",
-    "express-fileupload": "^1.5.1",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.13.2",
-    "node-cron": "^3.0.3",
-    "nodemailer": "^6.10.0",
-    "razorpay": "^2.9.6"
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

@@ -132,7 +132,7 @@ export const getUserPayments = catchAsyncErrors(async (req, res, next) => {
 
   const payments = await Borrow.find({ 
     user: userId, 
-    paymentStatus: "completed" 
+    fine: { $gt: 0 } 
   })
   .populate("book")
   .select("razorpayPaymentId fine paymentStatus createdAt book")
@@ -150,7 +150,7 @@ export const getUserPayments = catchAsyncErrors(async (req, res, next) => {
  */
 export const getAllPayments = catchAsyncErrors(async (req, res, next) => {
   const payments = await Borrow.find({ 
-    paymentStatus: "completed" 
+    fine: { $gt: 0 } 
   })
   .populate("book user")
   .select("razorpayPaymentId fine paymentStatus createdAt book user")

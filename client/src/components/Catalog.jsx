@@ -127,9 +127,9 @@ const Catalog = () => {
     if (fineFilter !== "all") {
       result = result.filter(book => {
         if (fineFilter === "unpaid") {
-          return book.fine > 0 && !book.finePaid;
+          return book.fine > 0 && book.paymentStatus !== "completed";
         } else if (fineFilter === "paid") {
-          return book.fine > 0 && book.finePaid;
+          return book.fine > 0 && book.paymentStatus === "completed";
         }
         return true;
       });
@@ -157,9 +157,9 @@ const Catalog = () => {
     if (fineFilter !== "all") {
       result = result.filter(book => {
         if (fineFilter === "unpaid") {
-          return book.fine > 0 && !book.finePaid;
+          return book.fine > 0 && book.paymentStatus !== "completed";
         } else if (fineFilter === "paid") {
-          return book.fine > 0 && book.finePaid;
+          return book.fine > 0 && book.paymentStatus === "completed";
         }
         return true;
       });
@@ -187,9 +187,9 @@ const Catalog = () => {
     if (fineFilter !== "all") {
       result = result.filter(book => {
         if (fineFilter === "unpaid") {
-          return book.fine > 0 && !book.finePaid;
+          return book.fine > 0 && book.paymentStatus !== "completed";
         } else if (fineFilter === "paid") {
-          return book.fine > 0 && book.finePaid;
+          return book.fine > 0 && book.paymentStatus === "completed";
         }
         return true;
       });
@@ -305,7 +305,7 @@ const Catalog = () => {
            (b.user?.email === emailParam || b.email === emailParam)
     );
     
-    if (borrowRecord && borrowRecord.fine > 0 && !borrowRecord.finePaid) {
+    if (borrowRecord && borrowRecord.fine > 0 && borrowRecord.paymentStatus !== "completed") {
       // Show payment popup first
       setSelectedBorrowRecord(borrowRecord);
     } else {
@@ -376,7 +376,7 @@ const Catalog = () => {
       "Due Date": formatDate(book.dueDate),
       "Borrowed Date": formatDateAndTime(book.borrowDate),
       "Fine": `₹${(book.fine || 0).toFixed(2)}`,
-      "Fine Status": book.fine > 0 ? (book.finePaid ? "Paid" : "Unpaid") : "No Fine",
+      "Fine Status": book.fine > 0 ? (book.paymentStatus === "completed" ? "Paid" : "Unpaid") : "No Fine",
       "Return Status": book.returnDate ? "Returned" : "Not Returned"
     }));
 
@@ -750,11 +750,11 @@ const Catalog = () => {
                       {formatDateAndTime(book.borrowDate)}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-800 border-r border-gray-100">
-                      {book.fine > 0 && !book.finePaid ? (
+                      {book.fine > 0 && book.paymentStatus !== "completed" ? (
                         <span className="text-red-600 font-semibold">
                           ₹{book.fine.toFixed(2)} (Unpaid)
                         </span>
-                      ) : book.fine > 0 && book.finePaid ? (
+                      ) : book.fine > 0 && book.paymentStatus === "completed" ? (
                         <span className="text-green-600">
                           ₹{book.fine.toFixed(2)} (Paid)
                         </span>
@@ -884,8 +884,8 @@ const Catalog = () => {
                     <p><span className="font-medium">Return Date:</span> {selectedBook?.returnDate ? formatDateAndTime(selectedBook.returnDate) : "Not returned"}</p>
                     <p><span className="font-medium">Fine:</span> 
                       {selectedBook?.fine > 0 ? (
-                        <span className={selectedBook?.finePaid ? "text-green-600" : "text-red-600"}>
-                          ₹{selectedBook?.fine?.toFixed(2)} ({selectedBook?.finePaid ? "Paid" : "Unpaid"})
+                        <span className={selectedBook?.paymentStatus === "completed" ? "text-green-600" : "text-red-600"}>
+                          ₹{selectedBook?.fine?.toFixed(2)} ({selectedBook?.paymentStatus === "completed" ? "Paid" : "Unpaid"})
                         </span>
                       ) : "No fine"}
                     </p>

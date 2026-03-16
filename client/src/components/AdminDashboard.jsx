@@ -309,10 +309,8 @@ const AdminDashboard = () => {
   const overdueCount = useMemo(() => {
     return allBorrowedBooks.filter((b) => {
       if (b.returnDate) return false;
-      if (!b.borrowDate) return false;
-      const borrowDate = new Date(b.borrowDate);
-      const diffDays = (now - borrowDate) / (1000 * 60 * 60 * 24);
-      return diffDays > overdueDaysLimit;
+      if (!b.dueDate) return false;
+      return new Date(b.dueDate) < now;
     }).length;
   }, [allBorrowedBooks]);
 
@@ -335,48 +333,35 @@ const AdminDashboard = () => {
   const booksDueThisWeek = useMemo(() => {
     return allBorrowedBooks.filter((b) => {
       if (b.returnDate) return false;
-      if (!b.borrowDate) return false;
+      if (!b.dueDate) return false;
       
-      // Use the actual dueDate from the borrow record instead of calculating
-      if (b.dueDate) {
-        const dueDate = new Date(b.dueDate);
-        const today = new Date();
-        const daysUntilDue = (dueDate - today) / (1000 * 60 * 60 * 24);
-        
-        // Books due within the next 7 days
-        return daysUntilDue >= 0 && daysUntilDue <= 7;
-      }
-      
-      // Fallback to 60 days from borrowDate if dueDate is not available
-      const borrowDate = new Date(b.borrowDate);
-      const dueDate = new Date(borrowDate);
-      dueDate.setDate(dueDate.getDate() + 60); // Using 60 days borrowing period
-      
+      const dueDate = new Date(b.dueDate);
       const today = new Date();
       const daysUntilDue = (dueDate - today) / (1000 * 60 * 60 * 24);
       
-      // Books due within the next 7 days
       return daysUntilDue >= 0 && daysUntilDue <= 7;
     }).length;
   }, [allBorrowedBooks]);
 
-  // Calculate pending returns (overdue but not yet returned)
+  // Calculate pending returns (overdue or with unpaid fines)
   const pendingReturns = useMemo(() => {
     return allBorrowedBooks.filter((b) => {
-      if (b.returnDate) return false;
-      if (!b.borrowDate) return false;
-      
-      // Use the actual dueDate from the borrow record
+      if (b.returnDate) return false; // Not pending if already returned
+
+      // Check for unpaid fines
+      const hasUnpaidFine = b.fine > 0 && b.paymentStatus !== "completed";
+
+      // Check for overdue status with 1-day grace period
+      let isOverdue = false;
       if (b.dueDate) {
         const dueDate = new Date(b.dueDate);
         const today = new Date();
-        return dueDate < today; // Overdue if due date has passed
+        // Add 1 day (24 hours) to the due date for the grace period
+        const gracePeriodEndDate = new Date(dueDate.getTime() + (1000 * 60 * 60 * 24));
+        isOverdue = today > gracePeriodEndDate;
       }
-      
-      // Fallback to 60 days from borrowDate if dueDate is not available
-      const borrowDate = new Date(b.borrowDate);
-      const diffDays = (now - borrowDate) / (1000 * 60 * 60 * 24);
-      return diffDays > 60; // Using 60 days as standard borrowing period
+
+      return hasUnpaidFine || isOverdue;
     }).length;
   }, [allBorrowedBooks]);
 
@@ -444,8 +429,8 @@ const AdminDashboard = () => {
   // Add this to get payment stats
   const paymentStats = useMemo(() => {
     const totalPayments = allPayments.length;
-    const totalPaymentAmount = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    const completedPayments = allPayments.filter(p => p.status === "completed").length;
+    const totalPaymentAmount = allPayments.reduce((sum, payment) => sum + (payment.fine || 0), 0);
+    const completedPayments = allPayments.filter(p => p.paymentStatus === "completed").length;
     
     return {
       totalPayments,
@@ -457,32 +442,29 @@ const AdminDashboard = () => {
   // Calculate total unpaid fines
   const totalUnpaidFines = useMemo(() => {
     return allBorrowedBooks
-      .filter(book => book.fine > 0 && !book.finePaid)
+      .filter(book => book.fine > 0 && book.paymentStatus !== "completed")
       .reduce((sum, book) => sum + book.fine, 0);
   }, [allBorrowedBooks]);
 
   // Calculate total revenue from fines
   const totalFineRevenue = useMemo(() => {
     return allPayments
-      .filter(payment => payment.status === "completed")
-      .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+      .filter(payment => payment.paymentStatus === "completed")
+      .reduce((sum, payment) => sum + (payment.fine || 0), 0);
   }, [allPayments]);
 
   // Calculate books needing attention (overdue or with unpaid fines)
   const booksNeedingAttention = useMemo(() => {
     return allBorrowedBooks.filter((b) => {
-      // Books that are overdue (using proper due date logic)
-      const isOverdue = !b.returnDate && (
-        (b.dueDate && new Date(b.dueDate) < new Date()) ||
-        (b.borrowDate && (now - new Date(b.borrowDate)) / (1000 * 60 * 60 * 24) > 60)
-      );
+      // Books that are overdue
+      const isOverdue = !b.returnDate && b.dueDate && new Date(b.dueDate) < now;
       
       // Books with unpaid fines
-      const hasUnpaidFines = b.fine > 0 && !b.finePaid;
+      const hasUnpaidFines = b.fine > 0 && b.paymentStatus !== "completed";
       
       return isOverdue || hasUnpaidFines;
     }).length;
-  }, [allBorrowedBooks]);
+  }, [allBorrowedBooks, now]);
 
   // Calculate user engagement metrics
   const userEngagementStats = useMemo(() => {
@@ -657,7 +639,7 @@ const AdminDashboard = () => {
   const paymentSuccessRate = useMemo(() => {
     if (allPayments.length === 0) return 0;
     
-    const completedPayments = allPayments.filter(p => p.status === "completed").length;
+    const completedPayments = allPayments.filter(p => p.paymentStatus === "completed").length;
     return Math.round((completedPayments / allPayments.length) * 100);
   }, [allPayments]);
 
@@ -687,14 +669,12 @@ const AdminDashboard = () => {
     
     const overdueBooks = allBorrowedBooks.filter(b => {
       if (b.returnDate) return false;
-      if (!b.borrowDate) return false;
-      const borrowDate = new Date(b.borrowDate);
-      const diffDays = (now - borrowDate) / (1000 * 60 * 60 * 24);
-      return diffDays > 14; // Assuming 14 days as standard borrowing period
+      if (!b.dueDate) return false;
+      return new Date(b.dueDate) < now;
     }).length;
     
     return ((overdueBooks / allBorrowedBooks.length) * 100).toFixed(1);
-  }, [allBorrowedBooks]);
+  }, [allBorrowedBooks, now]);
 
   // Calculate collection diversity (unique genres / total books)
   const collectionDiversity = useMemo(() => {
@@ -1159,9 +1139,9 @@ const AdminDashboard = () => {
                             {formatDateTime(rec.borrowDate || rec.createdAt)}
                           </span>
                           {rec.fine > 0 && (
-                            <span className={`text-xs font-semibold flex items-center gap-1 ${rec.finePaid ? "text-green-600" : "text-red-600"}`}>
+                            <span className={`text-xs font-semibold flex items-center gap-1 ${rec.paymentStatus === "completed" ? "text-green-600" : "text-red-600"}`}>
                               <IndianRupee className="w-3 h-3" />
-                              {rec.fine.toFixed(2)} {rec.finePaid ? "(Paid)" : "(Unpaid)"}
+                              {rec.fine.toFixed(2)} {rec.paymentStatus === "completed" ? "(Paid)" : "(Unpaid)"}
                             </span>
                           )}
                         </div>

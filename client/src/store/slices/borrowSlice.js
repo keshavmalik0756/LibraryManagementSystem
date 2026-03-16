@@ -3,7 +3,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // --- Base API URL ---
-const API_BASE = "https://libraflow-library.onrender.com/api/v1/borrow";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://libraflow-library.onrender.com/api/v1") + "/borrow";
 
 // --- Axios instance ---
 const axiosInstance = axios.create({
